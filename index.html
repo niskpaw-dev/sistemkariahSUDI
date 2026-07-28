@@ -199,7 +199,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-slate-700 mb-1"
-                  >No. Telefon Bimbit <span class="text-red-500">*</span></label
+                  >No. Telefon Bimbit</label
                 >
                 <input
                   type="tel"
@@ -1026,16 +1026,6 @@
         e.preventDefault();
         const btn = document.getElementById("btnSubmitForm");
         const dataObj = Object.fromEntries(new FormData(e.target).entries());
-
-        // Pengesahan tambahan: Pastikan sekurang-kurangnya satu nombor telefon diisi
-        if (!dataObj.noTelBimbit && !dataObj.noTelRumah) {
-          showToast(
-            "Maklumat Tidak Lengkap",
-            "Sila isikan sekurang-kurangnya No. Telefon Bimbit atau No. Telefon Rumah.",
-            "error",
-          );
-          return; // Hentikan proses jika tiada nombor telefon
-        }
 
         setBusy(btn, true, "Memproses...");
         try {
