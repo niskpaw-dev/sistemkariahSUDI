@@ -686,7 +686,33 @@
           </div>
         </header>
 
-        <div class="will-fade animate-fade-in-up" style="animation-delay: 0.1s">
+        <!-- Dashboard Stats -->
+        <div
+          id="adminDashboard"
+          class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 will-fade animate-fade-in-up"
+          style="animation-delay: 0.1s"
+        >
+          <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+            <p class="text-sm font-medium text-slate-500 mb-1">Jumlah Ahli</p>
+            <p id="statTotal" class="text-3xl font-bold text-slate-800">0</p>
+          </div>
+          <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+            <p class="text-sm font-medium text-slate-500 mb-1">Menunggu Pengesahan</p>
+            <p id="statPending" class="text-3xl font-bold text-amber-600">0</p>
+          </div>
+          <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+            <p class="text-sm font-medium text-slate-500 mb-1">Ahli Baharu (Bulan Ini)</p>
+            <p id="statNewThisMonth" class="text-3xl font-bold text-surau-emerald">0</p>
+          </div>
+          <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+            <p class="text-sm font-medium text-slate-500 mb-1">Status Perkahwinan</p>
+            <div id="statMarital" class="text-xs font-medium text-slate-600 space-y-1 mt-2">
+              <!-- Data diisi oleh JS -->
+            </div>
+          </div>
+        </div>
+
+        <div class="will-fade animate-fade-in-up" style="animation-delay: 0.2s">
           <div
             class="bg-white p-4 rounded-t-xl border border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4"
           >
@@ -1175,6 +1201,33 @@
         }
       }
 
+      function renderDashboard() {
+        const total = kariahData.length;
+        const pending = kariahData.filter((r) => r.status === "Menunggu").length;
+
+        const now = new Date();
+        const newThisMonth = kariahData.filter((r) => {
+          const d = new Date(r.tarikhMohon);
+          return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+        }).length;
+
+        const maritalStatus = kariahData.reduce((acc, r) => {
+          const status = r.statusPerkahwinan || "Tidak Dinyatakan";
+          acc[status] = (acc[status] || 0) + 1;
+          return acc;
+        }, {});
+
+        document.getElementById("statTotal").textContent = total;
+        document.getElementById("statPending").textContent = pending;
+        document.getElementById("statNewThisMonth").textContent = newThisMonth;
+
+        const maritalContainer = document.getElementById("statMarital");
+        maritalContainer.innerHTML = Object.entries(maritalStatus)
+          .sort((a, b) => b[1] - a[1]) // Susun dari jumlah tertinggi
+          .map(([status, count]) => `<div>${status}: <span class="font-bold">${count}</span></div>`)
+          .join("");
+      }
+
       function renderAdminTable(filterText = "") {
         const tableBody = document.getElementById("dataTableBody");
         tableBody.innerHTML = "";
@@ -1189,6 +1242,7 @@
           toggleUI("emptyState", true, "block");
         } else {
           toggleUI("emptyState", false, "block");
+          renderDashboard(); // Panggil fungsi dashboard
           filteredData
             .sort((a, b) => new Date(b.tarikhMohon) - new Date(a.tarikhMohon))
             .forEach((row) => {
@@ -1228,6 +1282,7 @@
           const r = kariahData.find((x) => x.id === id);
           if (r) r.status = "Disahkan";
           renderAdminTable(document.getElementById("searchInput").value);
+          renderDashboard();
           showToast("Disahkan", "Keahlian diaktifkan.", "success");
         } catch (err) {
           showToast("Ralat", err.message, "error");
@@ -1240,6 +1295,7 @@
           await api("remove", { token: adminToken, id });
           kariahData = kariahData.filter((x) => x.id !== id);
           renderAdminTable(document.getElementById("searchInput").value);
+          renderDashboard();
           showToast("Dipadam", "Rekod dibuang.", "error");
         } catch (err) {
           showToast("Ralat", err.message, "error");
