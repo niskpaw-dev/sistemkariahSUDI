@@ -687,6 +687,26 @@
           </div>
         </header>
 
+        <!-- Dashboard ringkasan (request SU) -->
+        <div class="grid grid-cols-2 gap-4 mb-6 will-fade animate-fade-in-up" style="animation-delay: 0.05s">
+          <div class="bg-white p-5 rounded-2xl shadow-sm border border-surau-cream-dark">
+            <p class="text-slate-500 text-sm font-medium">Jumlah Ahli</p>
+            <p id="statTotal" class="text-4xl font-bold text-slate-800 mt-1">0</p>
+          </div>
+          <div class="bg-white p-5 rounded-2xl shadow-sm border border-surau-cream-dark">
+            <p class="text-slate-500 text-sm font-medium">Menunggu Pengesahan</p>
+            <p id="statPending" class="text-4xl font-bold text-amber-500 mt-1">0</p>
+          </div>
+          <div class="bg-white p-5 rounded-2xl shadow-sm border border-surau-cream-dark">
+            <p class="text-slate-500 text-sm font-medium">Ahli Baharu (Bulan Ini)</p>
+            <p id="statNew" class="text-4xl font-bold text-surau-emerald mt-1">0</p>
+          </div>
+          <div class="bg-white p-5 rounded-2xl shadow-sm border border-surau-cream-dark">
+            <p class="text-slate-500 text-sm font-medium mb-2">Status Perkahwinan</p>
+            <div id="statMarital" class="text-sm text-slate-600 space-y-0.5"></div>
+          </div>
+        </div>
+
         <div class="will-fade animate-fade-in-up" style="animation-delay: 0.1s">
           <div
             class="bg-white p-4 rounded-t-xl border border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4"
@@ -1204,7 +1224,32 @@
         }
       }
 
+      // Kira & papar ringkasan dashboard dari data semasa
+      function renderDashboard() {
+        const data = kariahData || [];
+        document.getElementById("statTotal").textContent = data.length;
+        document.getElementById("statPending").textContent = data.filter(
+          (r) => r.status === "Menunggu",
+        ).length;
+        const now = new Date();
+        document.getElementById("statNew").textContent = data.filter((r) => {
+          const d = new Date(r.tarikhMohon);
+          return !isNaN(d) && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+        }).length;
+        const marital = { Berkahwin: 0, Bujang: 0, Duda: 0, Janda: 0 };
+        data.forEach((r) => {
+          if (marital[r.statusPerkahwinan] !== undefined) marital[r.statusPerkahwinan]++;
+        });
+        document.getElementById("statMarital").innerHTML = Object.entries(marital)
+          .map(
+            ([k, v]) =>
+              `<div class="flex justify-between"><span>${k}:</span><span class="font-semibold text-slate-800">${v}</span></div>`,
+          )
+          .join("");
+      }
+
       function renderAdminTable(filterText = "") {
+        renderDashboard();
         const tableBody = document.getElementById("dataTableBody");
         tableBody.innerHTML = "";
         const filteredData = kariahData.filter((item) =>
