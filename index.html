@@ -775,567 +775,179 @@
 
     <!-- LOGIK JAVASCRIPT (SFA - Niskala Pawaka) -->
     <script>
-      // --- 1. STATE & KONFIGURASI ---
-      // ⬇️ TAMPAL URL /exec GAS anda di sini selepas deploy backend.
-      const API_URL = "https://script.google.com/macros/s/AKfycbyILzMWybu_OEA6RZXqulxugTL8kGOz80zcYJXRMgmrO5uXmoZTGVKXyVNY7cEH0WHgJA/exec";
+    // 1. KONFIGURASI - TAMPAL URL WEB APP ANDA DI SINI
+    const API_URL = "https://script.google.com/macros/s/AKfycbyILzMWybu_OEA6RZXqulxugTL8kGOz80zcYJXRMgmrO5uXmoZTGVKXyVNY7cEH0WHgJA/exec";
 
-      const addressFields = ["alamat1", "alamat2", "alamat3", "poskod", "bandar", "negeri"];
-      let kariahData = []; // cache pentadbir (dimuat dari pelayan selepas login)
-      let editingId = null;
-      let editReturnView = "public";
-      let targetEditIdPublic = null;
-      let editMykadPublic = null; // MyKad ahli yang telah disahkan (untuk edit sendiri)
-      let adminPass = sessionStorage.getItem("kariah_pass") || null;
+    // 2. STATE UTAMA (Ditetapkan di peringkat global supaya semua fungsi kenal)
+    let adminToken = sessionStorage.getItem('kariah_token') || null;
+    let kariahData = [];
 
-      // --- API HELPER (text/plain elak CORS preflight GAS) ---
-      // Cuba semula automatik untuk tahan rangkaian goyah: GAS balas via redirect
-      // dua-hop yang kadang gagal pada talian perlahan → cuba lagi selalu berjaya.
-      async function api(action, payload = {}, tries = 3) {
-        let lastErr;
-        for (let i = 0; i < tries; i++) {
-          try {
+    // 3. FUNGSI API (Ultra Stable)
+    async function api(action, payload = {}) {
+        try {
             const res = await fetch(API_URL, {
-              method: "POST",
-              headers: { "Content-Type": "text/plain;charset=utf-8" },
-              body: JSON.stringify({ action, ...payload }),
+                method: 'POST',
+                body: JSON.stringify({ action, ...payload })
             });
-            const text = await res.text();
-            let data;
-            try {
-              data = JSON.parse(text);
-            } catch (parseErr) {
-              // GAS pulangkan HTML (redirect gagal pada rangkaian buruk) — cuba lagi
-              throw new Error("network");
-            }
-            if (data.error) {
-              if (data.code === 401) {
-                forceLogout();
-                throw new Error("Kata laluan salah atau sesi tamat. Sila log masuk semula.");
-              }
-              throw new Error(data.error);
-            }
+            const data = await res.json();
             return data;
-          } catch (err) {
-            lastErr = err;
-            // Jangan cuba lagi kalau ia ralat sah (401) — cuma ralat rangkaian
-            if (err.message && err.message.indexOf("Sila log masuk") !== -1) throw err;
-            if (i < tries - 1) await new Promise((r) => setTimeout(r, 900 * (i + 1)));
-          }
-        }
-        throw new Error(
-          lastErr && lastErr.message === "network"
-            ? "Rangkaian tidak stabil. Sila cuba lagi."
-            : lastErr
-              ? lastErr.message
-              : "Ralat tidak diketahui.",
-        );
-      }
-      function setBusy(btn, on, busyHTML) {
-        if (!btn) return;
-        if (on) {
-          btn.dataset._html = btn.innerHTML;
-          btn.disabled = true;
-          if (busyHTML) btn.innerHTML = busyHTML;
-        } else {
-          btn.disabled = false;
-          if (btn.dataset._html) {
-            btn.innerHTML = btn.dataset._html;
-            delete btn.dataset._html;
-          }
-        }
-      }
-
-      // --- 2. UTILITI UI MASTER ---
-      function toggleUI(id, show, displayType = "block") {
-        const el = document.getElementById(id);
-        if (!el) return;
-        if (show) {
-          el.classList.remove("hidden");
-          el.classList.add(displayType);
-        } else {
-          el.classList.remove(displayType);
-          el.classList.add("hidden");
-        }
-      }
-
-      function showToast(title, message, type = "success") {
-        const toast = document.getElementById("toast");
-        document.getElementById("toastTitle").textContent = title;
-        document.getElementById("toastMessage").textContent = message;
-        toast.className = `fixed top-4 right-4 max-w-sm bg-white shadow-xl rounded-xl p-4 flex items-start gap-3 z-50 border-l-4 ${type === "error" ? "border-red-500" : type === "info" ? "border-surau-gold" : "border-surau-emerald"} toast-visible`;
-        setTimeout(() => toast.classList.replace("toast-visible", "toast-hidden"), 4000);
-      }
-
-      function switchPublicTab(tab) {
-        if (editingId) return; // Tab dikunci sewaktu mod edit aktif
-        const bDaftar = document.getElementById("btnTabDaftar");
-        const bStatus = document.getElementById("btnTabStatus");
-
-        if (tab === "daftar") {
-          toggleUI("kariahForm", true, "block");
-          toggleUI("statusView", false, "block");
-          bDaftar.className =
-            "px-6 py-2 rounded-full bg-surau-emerald text-white text-sm font-bold shadow-sm transition-all focus:outline-none";
-          bStatus.className =
-            "px-6 py-2 rounded-full bg-white border border-surau-cream-dark text-slate-600 hover:bg-slate-50 text-sm font-medium transition-all focus:outline-none";
-        } else {
-          toggleUI("kariahForm", false, "block");
-          toggleUI("statusView", true, "block");
-          bStatus.className =
-            "px-6 py-2 rounded-full bg-surau-emerald text-white text-sm font-bold shadow-sm transition-all focus:outline-none";
-          bDaftar.className =
-            "px-6 py-2 rounded-full bg-white border border-surau-cream-dark text-slate-600 hover:bg-slate-50 text-sm font-medium transition-all focus:outline-none";
-
-          document.getElementById("statusResult").classList.add("hidden");
-          document.getElementById("semakMykad").value = "";
-          setTimeout(() => document.getElementById("semakMykad").focus(), 100);
-        }
-      }
-
-      // --- 3. AUTOMASI BORANG & EDIT REHYDRATION ---
-      function promptPublicEdit(id) {
-        targetEditIdPublic = id;
-        toggleUI("authEditModal", true, "flex");
-        document.getElementById("authFullMykad").value = "";
-        setTimeout(() => document.getElementById("authFullMykad").focus(), 100);
-      }
-
-      function closeAuthEditModal() {
-        toggleUI("authEditModal", false, "flex");
-        targetEditIdPublic = null;
-      }
-
-      // Teras Keselamatan Pengesahan Ahli — disahkan di pelayan
-      document.getElementById("authEditForm").addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const btn = e.submitter;
-        const inputRaw = document.getElementById("authFullMykad").value.replace(/\D/g, "");
-        setBusy(btn, true, "Menyemak...");
-        try {
-          const { record } = await api("getOwnRecord", { id: targetEditIdPublic, mykad: inputRaw });
-          editMykadPublic = inputRaw;
-          toggleUI("authEditModal", false, "flex");
-          targetEditIdPublic = null;
-          openEditForm(record, "public");
-          showToast("Akses Dibenarkan", "Sila kemas kini maklumat anda di bawah.", "success");
         } catch (err) {
-          showToast(
-            "Pengesahan Gagal",
-            err.message || "No. MyKad tidak padan dengan sistem.",
-            "error",
-          );
-        } finally {
-          setBusy(btn, false);
+            console.error("API Error:", err);
+            throw new Error("Gagal menghubungi pelayan.");
         }
-      });
+    }
 
-      // Mekanisme Buka Borang Mod Edit (terima ID admin ATAU objek rekod ahli)
-      function openEditForm(ref, sourceView) {
-        const record = typeof ref === "string" ? kariahData.find((i) => i.id === ref) : ref;
-        if (!record) return;
+    // 4. FUNGSI UI & TOAST
+    function showToast(msg, type = 'success') {
+        const t = document.getElementById('toast');
+        const m = document.getElementById('toastMsg');
+        t.className = `fixed top-4 right-4 bg-white border-l-4 ${type === 'error' ? 'border-red-500' : 'border-surau-emerald'} shadow-xl p-4 rounded-xl toast-visible z-50`;
+        m.innerText = msg;
+        setTimeout(() => t.classList.replace('toast-visible', 'toast-hidden'), 3000);
+    }
 
-        editingId = record.id;
-        editReturnView = sourceView;
+    function switchTab(t) {
+        document.getElementById('viewDaftar').classList.toggle('hidden', t !== 'daftar');
+        document.getElementById('viewStatus').classList.toggle('hidden', t !== 'status');
+        document.getElementById('tabDaftar').className = t === 'daftar' ? 'px-6 py-2 rounded-full bg-surau-emerald text-white font-bold' : 'px-6 py-2 rounded-full bg-white border border-slate-200 text-slate-600';
+        document.getElementById('tabStatus').className = t === 'status' ? 'px-6 py-2 rounded-full bg-surau-emerald text-white font-bold' : 'px-6 py-2 rounded-full bg-white border border-slate-200 text-slate-600';
+    }
 
-        toggleUI("adminView", false, "block");
-        toggleUI("publicView", true, "block");
-        toggleUI("statusView", false, "block");
-        toggleUI("kariahForm", true, "block");
-        toggleUI("publicTabs", false, "flex");
-        toggleUI("btnCancelEdit", true, "flex");
+    // 5. LOGIK PENTADBIR (LOGIN/LOGOUT/LOAD)
+    function showLogin() { document.getElementById('loginModal').classList.replace('hidden', 'flex'); }
+    function hideLogin() { document.getElementById('loginModal').classList.replace('flex', 'hidden'); }
 
-        document.getElementById("mainTitle").textContent = "Kemas Kini Maklumat";
-        document.getElementById("mainSubtitle").textContent =
-          "Sila pastikan data terkini adalah tepat.";
-        document.getElementById("btnSubmitForm").innerHTML =
-          `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg> Simpan Perubahan`;
-
-        const form = document.getElementById("kariahForm");
-        Object.keys(record).forEach((key) => {
-          if (form.elements[key] && form.elements[key].type !== "checkbox") {
-            form.elements[key].value = record[key];
-          }
-        });
-
-        const isSameAddress = addressFields.every(
-          (f) => record[`kp_${f}`] === record[`semasa_${f}`],
-        );
-        document.getElementById("salinAlamat").checked = isSameAddress;
-        syncAddresses();
-
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      }
-
-      // Batal Mod Edit & Kembali
-      function cancelEdit() {
-        editingId = null;
-        editMykadPublic = null;
-        document.getElementById("kariahForm").reset();
-        document.getElementById("salinAlamat").checked = false;
-        syncAddresses();
-
-        document.getElementById("mainTitle").textContent = "Sistem Kariah";
-        document.getElementById("mainSubtitle").textContent = "Surau Darul Iman, Kanchong Darat";
-        document.getElementById("btnSubmitForm").innerHTML =
-          `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg> Hantar Permohonan`;
-
-        toggleUI("btnCancelEdit", false, "flex");
-        toggleUI("publicTabs", true, "flex");
-
-        if (editReturnView === "admin") {
-          toggleUI("publicView", false, "block");
-          toggleUI("adminView", true, "block");
-          renderAdminTable(document.getElementById("searchInput").value);
-        } else {
-          switchPublicTab("status");
-          const mykadInput = document.getElementById("semakMykad").value;
-          if (mykadInput)
-            document.getElementById("semakStatusForm").dispatchEvent(new Event("submit"));
-        }
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      }
-
-      // Regex Pemformatan
-      document.getElementById("noMykad").addEventListener("input", (e) => {
-        let v = e.target.value.replace(/\D/g, "");
-        e.target.value =
-          v.length > 8
-            ? `${v.slice(0, 6)}-${v.slice(6, 8)}-${v.slice(8, 12)}`
-            : v.length > 6
-              ? `${v.slice(0, 6)}-${v.slice(6, 8)}`
-              : v;
-      });
-      document.getElementById("noTelBimbit").addEventListener("input", (e) => {
-        let v = e.target.value.replace(/\D/g, "").slice(0, 11);
-        e.target.value =
-          v.length > 10
-            ? `${v.slice(0, 3)} ${v.slice(3, 7)} ${v.slice(7)}`
-            : v.length > 6
-              ? `${v.slice(0, 3)} ${v.slice(3, 6)} ${v.slice(6)}`
-              : v;
-      });
-      document.getElementById("authFullMykad").addEventListener("input", (e) => {
-        let v = e.target.value.replace(/\D/g, "");
-        e.target.value =
-          v.length > 8
-            ? `${v.slice(0, 6)}-${v.slice(6, 8)}-${v.slice(8, 12)}`
-            : v.length > 6
-              ? `${v.slice(0, 6)}-${v.slice(6, 8)}`
-              : v;
-      });
-
-      const syncAddresses = () => {
-        const isChecked = document.getElementById("salinAlamat").checked;
-        addressFields.forEach((f) => {
-          const s = document.getElementById(`kp_${f}`),
-            t = document.getElementById(`semasa_${f}`);
-          if (isChecked) {
-            t.value = s.value;
-            t.readOnly = true;
-            if (t.tagName === "SELECT") t.style.pointerEvents = "none";
-            t.classList.add("bg-slate-100", "text-slate-500");
-          } else {
-            t.readOnly = false;
-            if (t.tagName === "SELECT") t.style.pointerEvents = "auto";
-            t.classList.remove("bg-slate-100", "text-slate-500");
-          }
-        });
-      };
-
-      document.getElementById("salinAlamat").addEventListener("change", syncAddresses);
-      addressFields.forEach((f) =>
-        document.getElementById(`kp_${f}`).addEventListener("input", () => {
-          if (document.getElementById("salinAlamat").checked) syncAddresses();
-        }),
-      );
-
-      // Hantar Permohonan / Simpan Edit (ke pelayan)
-      document.getElementById("kariahForm").addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const btn = document.getElementById("btnSubmitForm");
-        const dataObj = Object.fromEntries(new FormData(e.target).entries());
-        setBusy(btn, true, "Memproses...");
+    async function login() {
+        const password = document.getElementById('adminPass').value;
+        const btn = document.getElementById('btnLogin');
+        btn.disabled = true; btn.innerText = "Menyemak...";
+        
         try {
-          if (editingId) {
-            if (editReturnView === "admin") {
-              await api("adminUpdate", { token: adminToken, id: editingId, record: dataObj });
+            const data = await api('login', { password });
+            if (data.ok) {
+                adminToken = data.token;
+                sessionStorage.setItem('kariah_token', data.token);
+                hideLogin();
+                showToast("Log Masuk Berjaya!");
+                loadAdmin();
             } else {
-              await api("updateOwn", { id: editingId, mykad: editMykadPublic, record: dataObj });
+                showToast(data.error || "Kata laluan salah", "error");
             }
-            showToast("Data Dikemas Kini", "Maklumat kariah telah berjaya disimpan.", "success");
-            if (editReturnView === "admin") await loadAdminData();
-            cancelEdit();
-          } else {
-            await api("register", { record: dataObj });
-            showToast("Permohonan Diterima", "Maklumat direkod dan menunggu pengesahan.", "info");
-            e.target.reset();
-            document.getElementById("salinAlamat").checked = false;
-            syncAddresses();
-            window.scrollTo({ top: 0, behavior: "smooth" });
-          }
         } catch (err) {
-          showToast("Ralat", err.message, "error");
+            showToast(err.message, "error");
         } finally {
-          setBusy(btn, false);
+            btn.disabled = false; btn.innerText = "Masuk";
         }
-      });
+    }
 
-      // --- 4. LOGIK SEMAKAN STATUS ---
-      function maskName(name) {
-        return String(name || "")
-          .split(" ")
-          .map((word) => {
-            if (word.length <= 2) return word;
-            return word[0] + "*".repeat(word.length - 2) + word[word.length - 1];
-          })
-          .join(" ");
-      }
-
-      document.getElementById("semakStatusForm").addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const btn = e.submitter;
-        const input = document.getElementById("semakMykad").value.replace(/\D/g, "");
-        const resultContainer = document.getElementById("statusResult");
-        setBusy(btn, true, "Menyemak...");
-        try {
-          const { results } = await api("checkStatus", { digits: input });
-          resultContainer.classList.remove("hidden");
-          resultContainer.innerHTML = "";
-
-          if (!results.length) {
-            resultContainer.innerHTML = `<div class="p-4 bg-red-50 border border-red-100 text-red-700 rounded-xl text-center text-sm font-medium">Tiada rekod permohonan ditemui untuk nombor ini.</div>`;
-          } else {
-            results.forEach((row) => {
-              const isApproved = row.status === "Disahkan";
-              const statusClass = isApproved
-                ? "bg-green-100 text-green-700 border-green-200"
-                : "bg-amber-100 text-amber-700 border-amber-200";
-              const icon = isApproved
-                ? `<svg class="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`
-                : `<svg class="w-5 h-5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
-
-              const editBtn = isApproved
-                ? `<button type="button" onclick="promptPublicEdit('${row.id}')" class="mt-3 w-full bg-white border border-surau-emerald text-surau-emerald hover:bg-surau-emerald hover:text-white py-2 rounded-lg text-sm font-bold transition-colors shadow-sm">Kemaskini Data Ahli</button>`
-                : "";
-
-              resultContainer.innerHTML += `
-                        <div class="p-4 border ${isApproved ? "border-green-200 bg-green-50/50" : "border-amber-200 bg-amber-50/50"} rounded-xl transition-all">
-                            <div class="flex justify-between items-center">
-                                <div><p class="text-xs text-slate-400 font-mono mb-0.5">******-${input.slice(-4)}</p><p class="text-sm font-bold text-slate-700 uppercase">${row.nama}</p></div>
-                                <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg border ${statusClass} font-bold text-xs uppercase tracking-wide">${icon} ${row.status}</div>
-                            </div>
-                            ${editBtn}
-                        </div>
-                    `;
-            });
-          }
-        } catch (err) {
-          showToast("Ralat", err.message, "error");
-        } finally {
-          setBusy(btn, false);
-        }
-      });
-
-      // --- 5. LOGIK SISTEM PENTADBIR (ADMIN) ---
-      function openLoginModal() {
-        toggleUI("loginModal", true, "flex");
-        setTimeout(() => document.getElementById("adminPassword").focus(), 100);
-      }
-      function closeLoginModal() {
-        toggleUI("loginModal", false, "flex");
-        document.getElementById("loginForm").reset();
-      }
-
-      document.getElementById("loginForm").addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const btn = e.submitter;
-        const pw = document.getElementById("adminPassword").value;
-        setBusy(btn, true, "Menyemak...");
-        try {
-          await api("login", { password: pw });
-          adminPass = pw;
-          sessionStorage.setItem("kariah_pass", pw);
-          closeLoginModal();
-          toggleUI("publicView", false, "block");
-          toggleUI("mainFooter", false, "block");
-          toggleUI("adminView", true, "block");
-          await loadAdminData();
-          window.scrollTo(0, 0);
-          showToast("Akses Diberikan", "Selamat kembali, Admin.", "success");
-        } catch (err) {
-          showToast("Akses Ditolak", err.message || "Kata laluan salah.", "error");
-          document.getElementById("adminPassword").value = "";
-        } finally {
-          setBusy(btn, false);
-        }
-      });
-
-      function logoutAdmin() {
-        adminPass = null;
-        sessionStorage.removeItem("kariah_pass");
-        toggleUI("adminView", false, "block");
-        toggleUI("publicView", true, "block");
-        toggleUI("mainFooter", true, "block");
-        document.getElementById("searchInput").value = "";
-        showToast("Log Keluar Berjaya", "Sesi pentadbir telah ditamatkan.", "success");
-        window.scrollTo(0, 0);
-      }
-
-      function forceLogout() {
-        adminPass = null;
-        sessionStorage.removeItem("kariah_pass");
-        toggleUI("adminView", false, "block");
-        toggleUI("publicView", true, "block");
-        toggleUI("mainFooter", true, "block");
-      }
-
-      async function loadAdminData() {
-        const tableBody = document.getElementById("dataTableBody");
-        tableBody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-slate-400 text-sm">Memuatkan data…</td></tr>`;
-        try {
-          const { records } = await api("list", { password: adminPass });
-          kariahData = records || [];
-          renderAdminTable(document.getElementById("searchInput").value || "");
-        } catch (err) {
-          // Kegagalan (biasanya rangkaian) — jangan tendang keluar, tawar cuba lagi
-          tableBody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-slate-500 text-sm">
-            ${err.message}<br /><button onclick="loadAdminData()" class="mt-3 px-4 py-2 bg-surau-emerald text-white rounded-lg text-sm font-bold">Cuba Lagi</button>
-          </td></tr>`;
-        }
-      }
-
-      function renderAdminTable(filterText = "") {
-        const tableBody = document.getElementById("dataTableBody");
-        tableBody.innerHTML = "";
-        const filteredData = kariahData.filter((item) =>
-          `${item.namaPenuh} ${item.noMykad} ${item.noTelBimbit}`
-            .toLowerCase()
-            .includes(filterText.toLowerCase()),
-        );
-        document.getElementById("totalRecords").textContent = filteredData.length;
-
-        if (filteredData.length === 0) {
-          toggleUI("emptyState", true, "block");
-        } else {
-          toggleUI("emptyState", false, "block");
-          filteredData
-            .sort((a, b) => new Date(b.tarikhMohon) - new Date(a.tarikhMohon))
-            .forEach((row) => {
-              const tr = document.createElement("tr");
-              tr.className = "hover:bg-slate-50 transition-colors";
-              const dateObj = new Date(row.tarikhMohon);
-              const formattedDate = `${dateObj.getDate().toString().padStart(2, "0")}/${(dateObj.getMonth() + 1).toString().padStart(2, "0")}/${dateObj.getFullYear()}`;
-
-              const btnSahkan =
-                row.status === "Menunggu"
-                  ? `<button onclick="approveRecord('${row.id}')" class="text-surau-emerald hover:text-surau-emerald-dark font-medium mr-4">Sahkan</button>`
-                  : `<span class="text-slate-300 mr-4 font-medium">Selesai</span>`;
-
-              tr.innerHTML = `
-                        <td class="p-4 text-slate-500 font-mono text-xs">${formattedDate}</td>
-                        <td class="p-4 font-bold text-slate-800 uppercase">${row.namaPenuh}</td>
-                        <td class="p-4 text-slate-600 font-mono text-xs">${row.noMykad}</td>
-                        <td class="p-4"><span class="px-3 py-1 rounded-full text-[10px] uppercase font-bold tracking-wider ${row.status === "Disahkan" ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"}">${row.status}</span></td>
-                        <td class="p-4 text-right whitespace-nowrap">
-                            ${btnSahkan}
-                            <button onclick="openEditForm('${row.id}', 'admin')" class="text-blue-600 hover:text-blue-800 font-medium mr-4 transition-colors">Edit</button>
-                            <button onclick="deleteRecord('${row.id}')" class="text-red-500 hover:text-red-700 font-medium transition-colors">Padam</button>
-                        </td>
-                    `;
-              tableBody.appendChild(tr);
-            });
-        }
-      }
-
-      document
-        .getElementById("searchInput")
-        .addEventListener("input", (e) => renderAdminTable(e.target.value));
-
-      window.approveRecord = async (id) => {
-        try {
-          await api("setStatus", { token: adminToken, id, status: "Disahkan" });
-          const r = kariahData.find((x) => x.id === id);
-          if (r) r.status = "Disahkan";
-          renderAdminTable(document.getElementById("searchInput").value);
-          showToast("Disahkan", "Keahlian diaktifkan.", "success");
-        } catch (err) {
-          showToast("Ralat", err.message, "error");
-        }
-      };
-
-      window.deleteRecord = async (id) => {
-        if (!confirm("Padam rekod ini secara kekal?")) return;
-        try {
-          await api("remove", { token: adminToken, id });
-          kariahData = kariahData.filter((x) => x.id !== id);
-          renderAdminTable(document.getElementById("searchInput").value);
-          showToast("Dipadam", "Rekod dibuang.", "error");
-        } catch (err) {
-          showToast("Ralat", err.message, "error");
-        }
-      };
-
-      window.exportToCSV = () => {
-        if (!kariahData.length) return showToast("Ralat", "Tiada data untuk dieksport.", "error");
-        const headers = [
-          "ID",
-          "Tarikh",
-          "Status",
-          "Nama",
-          "MyKad",
-          "Kahwin",
-          "Tel Bimbit",
-          "Tel Rumah",
-          "Emel",
-          "Alamat Semasa",
-          "Poskod",
-          "Bandar",
-          "Negeri",
-          "Tempoh (Thn)",
-          "Tempoh (Bln)",
-        ];
-        const rows = [headers.join(",")].concat(
-          kariahData.map((r) => {
-            return [
-              r.id,
-              new Date(r.tarikhMohon).toLocaleDateString("ms-MY"),
-              r.status,
-              `"${r.namaPenuh}"`,
-              `="${r.noMykad}"`,
-              r.statusPerkahwinan,
-              `="${r.noTelBimbit}"`,
-              `="${r.noTelRumah || ""}"`,
-              r.email || "",
-              `"${`${r.semasa_alamat1} ${r.semasa_alamat2} ${r.semasa_alamat3 || ""}`.trim().replace(/"/g, '""')}"`,
-              `="${r.semasa_poskod}"`,
-              r.semasa_bandar,
-              r.semasa_negeri,
-              r.tempohTahun,
-              r.tempohBulan,
-            ].join(",");
-          }),
-        );
-        const blob = new Blob(["\uFEFF" + rows.join("\n")], { type: "text/csv;charset=utf-8;" });
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = `Data_Ahli_Kariah_${new Date().toISOString().slice(0, 10)}.csv`;
-        link.click();
-      };
-
-      // --- 6. INIT: pulihkan sesi admin jika token masih sah ---
-      (async function initAuth() {
+    async function loadAdmin() {
         if (!adminToken) return;
         try {
-          const { records } = await api("list", { token: adminToken });
-          kariahData = records || [];
-          toggleUI("publicView", false, "block");
-          toggleUI("mainFooter", false, "block");
-          toggleUI("adminView", true, "block");
-          renderAdminTable("");
-        } catch (e) {
-          forceLogout();
+            const data = await api('list', { token: adminToken });
+            if (data.error === 'AUTH') { logout(); return; }
+            
+            // Sembunyikan UI Awam, Tunjuk UI Admin
+            document.getElementById('publicHeader').classList.add('hidden');
+            document.getElementById('viewDaftar').classList.add('hidden');
+            document.getElementById('viewStatus').classList.add('hidden');
+            document.getElementById('viewAdmin').classList.remove('hidden');
+            document.querySelector('footer').classList.add('hidden');
+
+            const tbody = document.getElementById('adminTableBody');
+            const records = data.records || [];
+            
+            if (records.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="3" class="p-8 text-center text-slate-400">Tiada rekod ahli.</td></tr>`;
+            } else {
+                tbody.innerHTML = records.map(r => `
+                    <tr class="border-b hover:bg-slate-50 transition-colors">
+                        <td class="p-4 font-bold uppercase text-sm">${r.namaPenuh}</td>
+                        <td class="p-4"><span class="px-2 py-1 rounded text-[10px] font-bold uppercase ${r.status === 'Disahkan' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}">${r.status}</span></td>
+                        <td class="p-4 text-right">
+                            <button onclick="updateStatus('${r.id}', 'Disahkan')" class="text-emerald-600 font-bold text-xs mr-3">SAHKAN</button>
+                            <button onclick="deleteRec('${r.id}')" class="text-red-500 font-bold text-xs">PADAM</button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        } catch (err) {
+            showToast("Gagal memuatkan data", "error");
         }
-      })();
-    </script>
+    }
+
+    function logout() {
+        sessionStorage.removeItem('kariah_token');
+        location.reload();
+    }
+
+    async function updateStatus(id, status) {
+        try {
+            await api('setStatus', { token: adminToken, id, status });
+            showToast("Status dikemaskini");
+            loadAdmin();
+        } catch (err) { showToast(err.message, "error"); }
+    }
+
+    async function deleteRec(id) {
+        if (!confirm("Padam rekod ini secara kekal?")) return;
+        try {
+            await api('remove', { token: adminToken, id });
+            showToast("Rekod dipadam", "error");
+            loadAdmin();
+        } catch (err) { showToast(err.message, "error"); }
+    }
+
+    // 6. LOGIK AWAM (DAFTAR & SEMAK)
+    document.getElementById('kariahForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('btnSubmit');
+        btn.disabled = true; btn.innerText = "Menghantar...";
+        try {
+            const record = Object.fromEntries(new FormData(e.target));
+            const data = await api('register', { record });
+            if (data.ok) {
+                showToast("Permohonan Berjaya Dihantar!");
+                e.target.reset();
+            } else { throw new Error(data.error); }
+        } catch (err) {
+            showToast(err.message, "error");
+        } finally {
+            btn.disabled = false; btn.innerText = "Hantar Permohonan";
+        }
+    };
+
+    async function checkStatus() {
+        const digits = document.getElementById('inputStatus').value;
+        const resDiv = document.getElementById('statusResult');
+        if (digits.length < 4) return;
+        try {
+            const data = await api('checkStatus', { digits });
+            resDiv.innerHTML = (data.results || []).map(r => `
+                <div class="p-4 border rounded-xl bg-white shadow-sm flex justify-between items-center">
+                    <div>
+                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">${r.nama}</p>
+                        <p class="font-bold text-sm ${r.status === 'Disahkan' ? 'text-emerald-600' : 'text-amber-600'}">${r.status.toUpperCase()}</p>
+                    </div>
+                    ${r.status === 'Disahkan' ? '✅' : '⏳'}
+                </div>
+            `).join('') || `<p class="text-center text-sm text-slate-400">Tiada rekod dijumpai.</p>`;
+        } catch (err) { showToast(err.message, "error"); }
+    }
+
+    // 7. AUTO-FORMAT MYKAD
+    document.getElementById('noMykad').oninput = (e) => {
+        let v = e.target.value.replace(/\D/g, '');
+        if (v.length > 6) v = v.slice(0,6) + '-' + v.slice(6);
+        if (v.length > 9) v = v.slice(0,9) + '-' + v.slice(9,13);
+        e.target.value = v;
+    };
+
+    // 8. INITIALIZE (Run apabila page dimuatkan)
+    window.onload = () => {
+        if (adminToken) {
+            loadAdmin();
+        }
+    };
+</script>
   </body>
 </html>
