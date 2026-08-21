@@ -1058,7 +1058,7 @@
         try {
           if (editingId) {
             if (editReturnView === "admin") {
-              await api("adminUpdate", { token: adminToken, id: editingId, record: dataObj });
+              await api("adminUpdate", { password: adminPass, id: editingId, record: dataObj });
             } else {
               await api("updateOwn", { id: editingId, mykad: editMykadPublic, record: dataObj });
             }
@@ -1253,7 +1253,7 @@
 
       window.approveRecord = async (id) => {
         try {
-          await api("setStatus", { token: adminToken, id, status: "Disahkan" });
+          await api("setStatus", { password: adminPass, id, status: "Disahkan" });
           const r = kariahData.find((x) => x.id === id);
           if (r) r.status = "Disahkan";
           renderAdminTable(document.getElementById("searchInput").value);
@@ -1266,7 +1266,7 @@
       window.deleteRecord = async (id) => {
         if (!confirm("Padam rekod ini secara kekal?")) return;
         try {
-          await api("remove", { token: adminToken, id });
+          await api("remove", { password: adminPass, id });
           kariahData = kariahData.filter((x) => x.id !== id);
           renderAdminTable(document.getElementById("searchInput").value);
           showToast("Dipadam", "Rekod dibuang.", "error");
@@ -1322,11 +1322,11 @@
         link.click();
       };
 
-      // --- 6. INIT: pulihkan sesi admin jika token masih sah ---
+      // --- 6. INIT: pulihkan sesi admin jika kata laluan masih tersimpan ---
       (async function initAuth() {
-        if (!adminToken) return;
+        if (!adminPass) return;
         try {
-          const { records } = await api("list", { token: adminToken });
+          const { records } = await api("list", { password: adminPass });
           kariahData = records || [];
           toggleUI("publicView", false, "block");
           toggleUI("mainFooter", false, "block");
