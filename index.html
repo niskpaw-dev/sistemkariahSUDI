@@ -1,1368 +1,235 @@
 <!DOCTYPE html>
 <html lang="ms">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistem Kariah - Surau Darul Iman</title>
-    <!-- Tailwind CSS (CDN) -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-      // Konfigurasi Tema (Niskala Pawaka OCD Standard)
-      tailwind.config = {
-        theme: {
-          extend: {
-            colors: {
-              "surau-emerald": "#059669",
-              "surau-emerald-dark": "#047857",
-              "surau-cream": "#FDFBF7",
-              "surau-cream-dark": "#EAE6D9",
-              "surau-gold": "#d97706",
-            },
-            animation: {
-              "fade-in-down": "fadeInDown 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards",
-              "fade-in-up": "fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards",
-              "fade-in": "fadeIn 0.3s ease-in-out forwards",
-              "zoom-in": "zoomIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards",
-            },
-            keyframes: {
-              fadeInDown: {
-                "0%": { opacity: "0", transform: "translateY(-20px)" },
-                "100%": { opacity: "1", transform: "translateY(0)" },
-              },
-              fadeInUp: {
-                "0%": { opacity: "0", transform: "translateY(20px)" },
-                "100%": { opacity: "1", transform: "translateY(0)" },
-              },
-              fadeIn: { "0%": { opacity: "0" }, "100%": { opacity: "1" } },
-              zoomIn: {
-                "0%": { opacity: "0", transform: "scale(0.95)" },
-                "100%": { opacity: "1", transform: "scale(1)" },
-              },
-            },
-          },
-        },
-      };
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { "surau-emerald": "#059669", "surau-emerald-dark": "#047857", "surau-cream": "#FDFBF7" }
+                }
+            }
+        };
     </script>
     <style>
-      .input-transition {
-        transition: all 0.2s ease-in-out;
-      }
-      .will-fade {
-        opacity: 0;
-      }
-      input[type="number"]::-webkit-inner-spin-button,
-      input[type="number"]::-webkit-outer-spin-button {
-        -webkit-appearance: none;
-        margin: 0;
-      }
-      #toast {
-        transition:
-          opacity 0.3s,
-          transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-      }
-      .toast-hidden {
-        opacity: 0;
-        transform: translateY(-20px);
-        pointer-events: none;
-      }
-      .toast-visible {
-        opacity: 1;
-        transform: translateY(0);
-        pointer-events: auto;
-      }
-      .table-scroll::-webkit-scrollbar {
-        height: 8px;
-        width: 8px;
-      }
-      .table-scroll::-webkit-scrollbar-track {
-        background: #fdfbf7;
-      }
-      .table-scroll::-webkit-scrollbar-thumb {
-        background: #d1d5db;
-        border-radius: 4px;
-      }
-      .table-scroll::-webkit-scrollbar-thumb:hover {
-        background: #9ca3af;
-      }
+        .toast-hidden { opacity: 0; transform: translateY(-20px); pointer-events: none; }
+        .toast-visible { opacity: 1; transform: translateY(0); }
+        input:focus { border-color: #059669 !important; ring: 2px #059669; }
     </style>
-  </head>
-  <body
-    class="bg-surau-cream min-h-screen text-slate-800 font-sans antialiased selection:bg-surau-emerald selection:text-white flex flex-col relative"
-  >
-    <main class="flex-grow w-full max-w-5xl mx-auto p-4 sm:p-6 lg:p-8 overflow-hidden">
-      <!-- ========================================== -->
-      <!-- VIEW 1: ANTARA MUKA AWAM                   -->
-      <!-- ========================================== -->
-      <section id="publicView" class="block">
-        <header
-          class="text-center mb-6 bg-white p-6 rounded-2xl shadow-sm border border-surau-cream-dark will-fade animate-fade-in-down"
-        >
-          <img
-            src="https://i.postimg.cc/xj7Tg7Wv/file-00000000341472068053d1849794a56f.png"
-            alt="Logo Surau Darul Iman"
-            class="w-24 h-24 mx-auto mb-4 object-contain"
-            onerror="this.style.display = 'none'"
-          />
-          <h1 id="mainTitle" class="text-2xl font-bold text-surau-emerald-dark mb-1">
-            Sistem Kariah
-          </h1>
-          <p id="mainSubtitle" class="text-slate-600 font-medium text-sm">
-            Surau Darul Iman, Kanchong Darat
-          </p>
+</head>
+<body class="bg-surau-cream min-h-screen text-slate-800 font-sans">
+
+    <main class="max-w-5xl mx-auto p-4 sm:p-8">
+        <!-- HEADER -->
+        <header id="publicHeader" class="text-center mb-8 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+            <h1 class="text-3xl font-bold text-surau-emerald-dark">Sistem Kariah</h1>
+            <p class="text-slate-500">Surau Darul Iman, Kanchong Darat</p>
+            <div id="navTabs" class="flex justify-center gap-4 mt-6">
+                <button onclick="switchTab('daftar')" id="tabDaftar" class="px-6 py-2 rounded-full bg-surau-emerald text-white font-bold">Pendaftaran</button>
+                <button onclick="switchTab('status')" id="tabStatus" class="px-6 py-2 rounded-full bg-white border border-slate-200 text-slate-600">Semak Status</button>
+            </div>
         </header>
 
-        <div
-          id="publicTabs"
-          class="flex justify-center gap-3 mb-8 will-fade animate-fade-in-up"
-          style="animation-delay: 0.1s"
-        >
-          <button
-            id="btnTabDaftar"
-            onclick="switchPublicTab('daftar')"
-            class="px-6 py-2 rounded-full bg-surau-emerald text-white text-sm font-bold shadow-sm transition-all focus:outline-none"
-          >
-            Borang Pendaftaran
-          </button>
-          <button
-            id="btnTabStatus"
-            onclick="switchPublicTab('status')"
-            class="px-6 py-2 rounded-full bg-white border border-surau-cream-dark text-slate-600 hover:bg-slate-50 text-sm font-medium transition-all focus:outline-none"
-          >
-            Semak Status
-          </button>
-        </div>
-
-        <!-- SUB-VIEW: BORANG PENDAFTARAN & KEMASKINI (DIKONGSI) -->
-        <form
-          id="kariahForm"
-          class="block bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-surau-cream-dark space-y-8 will-fade animate-fade-in-up"
-          style="animation-delay: 0.2s"
-        >
-          <fieldset class="space-y-4">
-            <legend
-              class="text-lg font-semibold text-surau-emerald-dark border-b border-surau-cream-dark pb-2 mb-4 w-full"
-            >
-              1. Maklumat Peribadi
-            </legend>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div class="md:col-span-2">
-                <label class="block text-sm font-medium text-slate-700 mb-1"
-                  >Nama Penuh <span class="text-red-500">*</span></label
-                >
-                <input
-                  type="text"
-                  name="namaPenuh"
-                  required
-                  class="input-transition w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-surau-emerald outline-none uppercase"
-                  placeholder="SEPERTI DALAM KAD PENGENALAN"
-                />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1"
-                  >No. MyKad <span class="text-red-500">*</span></label
-                >
-                <input
-                  type="text"
-                  id="noMykad"
-                  name="noMykad"
-                  required
-                  maxlength="14"
-                  class="input-transition w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-surau-emerald outline-none"
-                  placeholder="XXXXXX-XX-XXXX"
-                />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1"
-                  >Status Perkahwinan <span class="text-red-500">*</span></label
-                >
-                <select
-                  name="statusPerkahwinan"
-                  required
-                  class="input-transition w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-surau-emerald outline-none bg-white"
-                >
-                  <option value="">Sila pilih...</option>
-                  <option value="Bujang">Bujang</option>
-                  <option value="Berkahwin">Berkahwin</option>
-                  <option value="Duda">Duda</option>
-                  <option value="Janda">Janda</option>
-                </select>
-              </div>
-            </div>
-          </fieldset>
-
-          <fieldset class="space-y-4">
-            <legend
-              class="text-lg font-semibold text-surau-emerald-dark border-b border-surau-cream-dark pb-2 mb-4 w-full"
-            >
-              2. Maklumat Hubungan
-            </legend>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1"
-                  >No. Telefon Bimbit</label
-                >
-                <input
-                  type="tel"
-                  id="noTelBimbit"
-                  name="noTelBimbit"
-                  maxlength="13"
-                  class="input-transition w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-surau-emerald outline-none"
-                  placeholder="012 345 6789"
-                />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1"
-                  >No. Telefon Rumah</label
-                >
-                <input
-                  type="tel"
-                  name="noTelRumah"
-                  class="input-transition w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-surau-emerald outline-none"
-                  placeholder="03 1234 5678 (Jika ada)"
-                />
-              </div>
-              <div class="md:col-span-2">
-                <label class="block text-sm font-medium text-slate-700 mb-1">E-mel</label>
-                <input
-                  type="email"
-                  name="email"
-                  class="input-transition w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-surau-emerald outline-none lowercase"
-                  placeholder="alamat@emel.com (Pilihan)"
-                />
-              </div>
-            </div>
-          </fieldset>
-
-          <fieldset class="space-y-6">
-            <legend
-              class="text-lg font-semibold text-surau-emerald-dark border-b border-surau-cream-dark pb-2 w-full"
-            >
-              3. Maklumat Kediaman
-            </legend>
-            <div class="bg-surau-cream p-4 rounded-xl border border-surau-cream-dark space-y-4">
-              <h3 class="font-medium text-slate-800 text-sm">Alamat (Dalam Kad Pengenalan)</h3>
-              <div class="space-y-3">
-                <input
-                  type="text"
-                  id="kp_alamat1"
-                  name="kp_alamat1"
-                  required
-                  class="input-transition w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-surau-emerald outline-none uppercase"
-                  placeholder="Alamat Baris 1 (No. rumah/bangunan, nama jalan) *"
-                />
-                <input
-                  type="text"
-                  id="kp_alamat2"
-                  name="kp_alamat2"
-                  required
-                  class="input-transition w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-surau-emerald outline-none uppercase"
-                  placeholder="Alamat Baris 2 (Taman/kampung/apartment) *"
-                />
-                <input
-                  type="text"
-                  id="kp_alamat3"
-                  name="kp_alamat3"
-                  class="input-transition w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-surau-emerald outline-none uppercase"
-                  placeholder="Alamat Baris 3 (Tambahan - Pilihan)"
-                />
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <input
-                    type="number"
-                    id="kp_poskod"
-                    name="kp_poskod"
-                    required
-                    maxlength="5"
-                    class="input-transition w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-surau-emerald outline-none"
-                    placeholder="Poskod *"
-                  />
-                  <input
-                    type="text"
-                    id="kp_bandar"
-                    name="kp_bandar"
-                    required
-                    class="input-transition w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-surau-emerald outline-none uppercase"
-                    placeholder="Bandar *"
-                  />
-                  <select
-                    id="kp_negeri"
-                    name="kp_negeri"
-                    required
-                    class="input-transition w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-surau-emerald outline-none bg-white uppercase"
-                  >
-                    <option value="">Negeri *</option>
-                    <option value="Selangor">Selangor</option>
-                    <option value="Johor">Johor</option>
-                    <option value="Kedah">Kedah</option>
-                    <option value="Kelantan">Kelantan</option>
-                    <option value="Melaka">Melaka</option>
-                    <option value="Negeri Sembilan">Negeri Sembilan</option>
-                    <option value="Pahang">Pahang</option>
-                    <option value="Perak">Perak</option>
-                    <option value="Perlis">Perlis</option>
-                    <option value="Pulau Pinang">Pulau Pinang</option>
-                    <option value="Sabah">Sabah</option>
-                    <option value="Sarawak">Sarawak</option>
-                    <option value="Terengganu">Terengganu</option>
-                    <option value="W.P. Kuala Lumpur">W.P. Kuala Lumpur</option>
-                    <option value="W.P. Labuan">W.P. Labuan</option>
-                    <option value="W.P. Putrajaya">W.P. Putrajaya</option>
-                  </select>
+        <!-- FORM PENDAFTARAN -->
+        <section id="viewDaftar" class="bg-white p-6 rounded-2xl shadow-md border border-slate-200">
+            <form id="kariahForm" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-bold mb-1">Nama Penuh (Seperti MyKad) *</label>
+                        <input type="text" name="namaPenuh" required class="w-full p-3 border rounded-lg uppercase">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold mb-1">No. MyKad *</label>
+                        <input type="text" name="noMykad" id="noMykad" placeholder="XXXXXX-XX-XXXX" required class="w-full p-3 border rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold mb-1">No. Telefon Bimbit *</label>
+                        <input type="tel" name="noTelBimbit" required class="w-full p-3 border rounded-lg">
+                    </div>
                 </div>
-              </div>
-            </div>
-
-            <div class="flex items-center px-2 py-1">
-              <input
-                type="checkbox"
-                id="salinAlamat"
-                class="w-4 h-4 text-surau-emerald border-slate-300 rounded focus:ring-surau-emerald cursor-pointer"
-              />
-              <label
-                for="salinAlamat"
-                class="ml-2 block text-sm font-medium text-slate-700 cursor-pointer"
-                >Alamat tempat tinggal sekarang sama seperti alamat Kad Pengenalan di atas</label
-              >
-            </div>
-
-            <div class="bg-surau-cream p-4 rounded-xl border border-surau-cream-dark space-y-4">
-              <h3 class="font-medium text-slate-800 text-sm">Alamat Tempat Tinggal Sekarang</h3>
-              <div class="space-y-3">
-                <input
-                  type="text"
-                  id="semasa_alamat1"
-                  name="semasa_alamat1"
-                  required
-                  class="input-transition w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-surau-emerald outline-none uppercase"
-                  placeholder="Alamat Baris 1 *"
-                />
-                <input
-                  type="text"
-                  id="semasa_alamat2"
-                  name="semasa_alamat2"
-                  required
-                  class="input-transition w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-surau-emerald outline-none uppercase"
-                  placeholder="Alamat Baris 2 *"
-                />
-                <input
-                  type="text"
-                  id="semasa_alamat3"
-                  name="semasa_alamat3"
-                  class="input-transition w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-surau-emerald outline-none uppercase"
-                  placeholder="Alamat Baris 3 (Tambahan - Pilihan)"
-                />
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <input
-                    type="number"
-                    id="semasa_poskod"
-                    name="semasa_poskod"
-                    required
-                    maxlength="5"
-                    class="input-transition w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-surau-emerald outline-none"
-                    placeholder="Poskod *"
-                  />
-                  <input
-                    type="text"
-                    id="semasa_bandar"
-                    name="semasa_bandar"
-                    required
-                    class="input-transition w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-surau-emerald outline-none uppercase"
-                    placeholder="Bandar *"
-                  />
-                  <select
-                    id="semasa_negeri"
-                    name="semasa_negeri"
-                    required
-                    class="input-transition w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-surau-emerald outline-none bg-white uppercase"
-                  >
-                    <option value="">Negeri *</option>
-                    <option value="Selangor">Selangor</option>
-                    <option value="Johor">Johor</option>
-                    <option value="Kedah">Kedah</option>
-                    <option value="Kelantan">Kelantan</option>
-                    <option value="Melaka">Melaka</option>
-                    <option value="Negeri Sembilan">Negeri Sembilan</option>
-                    <option value="Pahang">Pahang</option>
-                    <option value="Perak">Perak</option>
-                    <option value="Perlis">Perlis</option>
-                    <option value="Pulau Pinang">Pulau Pinang</option>
-                    <option value="Sabah">Sabah</option>
-                    <option value="Sarawak">Sarawak</option>
-                    <option value="Terengganu">Terengganu</option>
-                    <option value="W.P. Kuala Lumpur">W.P. Kuala Lumpur</option>
-                    <option value="W.P. Labuan">W.P. Labuan</option>
-                    <option value="W.P. Putrajaya">W.P. Putrajaya</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            <div class="md:w-1/2 pt-2">
-              <label class="block text-sm font-medium text-slate-700 mb-2"
-                >Tempoh Masa Menetap (Di Alamat Semasa) <span class="text-red-500">*</span></label
-              >
-              <div class="flex gap-4 items-center">
-                <div class="flex items-center gap-2">
-                  <input
-                    type="number"
-                    name="tempohTahun"
-                    min="0"
-                    required
-                    class="input-transition w-24 px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-surau-emerald outline-none text-center"
-                  />
-                  <span class="text-sm text-slate-600 font-medium">Tahun</span>
-                </div>
-                <div class="flex items-center gap-2">
-                  <input
-                    type="number"
-                    name="tempohBulan"
-                    min="0"
-                    max="11"
-                    required
-                    class="input-transition w-24 px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-surau-emerald outline-none text-center"
-                  />
-                  <span class="text-sm text-slate-600 font-medium">Bulan</span>
-                </div>
-              </div>
-            </div>
-          </fieldset>
-
-          <div class="bg-amber-50 border border-amber-200 rounded-xl p-5 flex items-start gap-4">
-            <div class="flex-shrink-0 pt-0.5">
-              <input
-                type="checkbox"
-                id="perakuanCheck"
-                required
-                class="w-5 h-5 text-amber-600 border-amber-300 rounded focus:ring-amber-500 cursor-pointer"
-              />
-            </div>
-            <div>
-              <label
-                for="perakuanCheck"
-                class="text-sm text-amber-900 block leading-relaxed cursor-pointer"
-              >
-                <strong class="font-bold text-amber-950 block mb-1">Perakuan & Pengesahan</strong>
-                Saya mengesahkan bahawa segala maklumat di atas adalah benar.
-              </label>
-            </div>
-          </div>
-
-          <div
-            class="pt-6 border-t border-surau-cream-dark flex flex-col sm:flex-row-reverse gap-3"
-          >
-            <button
-              type="submit"
-              id="btnSubmitForm"
-              class="w-full sm:w-auto min-w-[200px] bg-surau-emerald hover:bg-surau-emerald-dark text-white font-bold py-3 px-6 rounded-xl shadow-md transition-colors flex justify-center items-center gap-2"
-            >
-              Hantar Permohonan
-            </button>
-            <button
-              type="button"
-              id="btnCancelEdit"
-              onclick="cancelEdit()"
-              class="hidden w-full sm:w-auto min-w-[150px] bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold py-3 px-6 rounded-xl shadow-sm transition-colors items-center justify-center"
-            >
-              Batal
-            </button>
-          </div>
-        </form>
-
-        <!-- SUB-VIEW: SEMAK STATUS -->
-        <section
-          id="statusView"
-          class="hidden max-w-md mx-auto bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-surau-cream-dark will-fade animate-fade-in-up"
-          style="animation-delay: 0.2s"
-        >
-          <h2 class="text-xl font-bold text-slate-800 mb-2 text-center">Semakan Status</h2>
-          <p class="text-sm text-slate-500 text-center mb-6">
-            Sila masukkan 4 digit terakhir MyKad anda.
-          </p>
-
-          <form id="semakStatusForm" class="space-y-4">
-            <div>
-              <input
-                type="text"
-                id="semakMykad"
-                maxlength="4"
-                required
-                class="w-full px-4 py-3 text-center text-3xl font-mono tracking-[0.5em] border-2 border-slate-200 rounded-xl focus:border-surau-emerald focus:ring-0 outline-none transition-colors placeholder:text-slate-200"
-                placeholder="XXXX"
-                oninput="this.value = this.value.replace(/[^0-9]/g, '')"
-              />
-            </div>
-            <button
-              type="submit"
-              class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 rounded-xl shadow-md transition-colors flex justify-center items-center gap-2"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-              </svg>
-              Semak Rekod
-            </button>
-          </form>
-
-          <div id="statusResult" class="mt-6 hidden space-y-3"></div>
+                <button type="submit" id="btnSubmit" class="w-full bg-surau-emerald hover:bg-surau-emerald-dark text-white font-bold py-4 rounded-xl transition-all">Hantar Permohonan</button>
+            </form>
         </section>
-      </section>
 
-      <!-- ========================================== -->
-      <!-- VIEW 2: MODAL PENGESAHAN EDIT (AHLI)       -->
-      <!-- ========================================== -->
-      <div
-        id="authEditModal"
-        class="hidden fixed inset-0 z-50 items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm transition-opacity"
-      >
-        <div
-          class="bg-white p-6 sm:p-8 rounded-2xl shadow-2xl border border-slate-100 max-w-sm w-full will-fade animate-zoom-in"
-        >
-          <div class="text-center mb-6">
-            <div
-              class="mx-auto w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mb-4"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="h-6 w-6"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
-                />
-              </svg>
-            </div>
-            <h2 class="text-xl font-bold text-slate-800">Pengesahan Sekuriti</h2>
-            <p class="text-sm text-slate-500 mt-1">
-              Sila masukkan <b>No. MyKad penuh</b> anda untuk akses kemas kini.
-            </p>
-          </div>
+        <!-- VIEW SEMAK STATUS -->
+        <section id="viewStatus" class="hidden max-w-md mx-auto bg-white p-6 rounded-2xl shadow-md border border-slate-200">
+            <h2 class="text-xl font-bold mb-4 text-center">Semakan Status</h2>
+            <input type="text" id="inputStatus" maxlength="4" placeholder="4 Digit Terakhir MyKad" class="w-full p-4 text-center text-2xl tracking-widest border-2 rounded-xl mb-4">
+            <button onclick="checkStatus()" id="btnCheck" class="w-full bg-slate-800 text-white py-3 rounded-lg font-bold">Semak Rekod</button>
+            <div id="statusResult" class="mt-6 space-y-3"></div>
+        </section>
 
-          <form id="authEditForm" class="space-y-4">
-            <input
-              type="text"
-              id="authFullMykad"
-              maxlength="14"
-              required
-              class="w-full px-4 py-3 text-center border-2 border-slate-200 rounded-xl focus:border-surau-emerald focus:ring-0 outline-none transition-colors"
-              placeholder="XXXXXX-XX-XXXX"
-            />
-            <button
-              type="submit"
-              class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 rounded-xl shadow-md transition-colors"
-            >
-              Sahkan Identiti
-            </button>
-            <button
-              type="button"
-              onclick="closeAuthEditModal()"
-              class="w-full py-2 text-sm font-medium text-slate-500 hover:text-slate-800 transition-colors"
-            >
-              Batal
-            </button>
-          </form>
-        </div>
-      </div>
-
-      <!-- ========================================== -->
-      <!-- VIEW 3: MODAL LOG MASUK PENTADBIR          -->
-      <!-- ========================================== -->
-      <div
-        id="loginModal"
-        class="hidden fixed inset-0 z-50 items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm transition-opacity"
-      >
-        <div
-          class="bg-white p-6 sm:p-8 rounded-2xl shadow-2xl border border-slate-100 max-w-sm w-full will-fade animate-zoom-in"
-        >
-          <div class="text-center mb-6">
-            <div
-              class="mx-auto w-12 h-12 bg-surau-emerald/10 text-surau-emerald rounded-full flex items-center justify-center mb-4"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="h-6 w-6"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                />
-              </svg>
+        <!-- ADMIN PANEL -->
+        <section id="viewAdmin" class="hidden">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">Panel Pentadbir</h2>
+                <button onclick="logout()" class="bg-red-500 text-white px-4 py-2 rounded-lg">Log Keluar</button>
             </div>
-            <h2 class="text-xl font-bold text-slate-800">Akses Pentadbir</h2>
-            <p class="text-sm text-slate-500 mt-1">
-              Masukkan kata laluan pentadbir untuk teruskan.
-            </p>
-          </div>
-
-          <form id="loginForm" class="space-y-4">
-            <input
-              type="password"
-              id="adminPassword"
-              required
-              class="w-full px-4 py-3 text-center text-lg border-2 border-slate-200 rounded-xl focus:border-surau-emerald focus:ring-0 outline-none transition-colors"
-              placeholder="••••••••"
-            />
-            <button
-              type="submit"
-              class="w-full bg-surau-emerald hover:bg-surau-emerald-dark text-white font-bold py-3 rounded-xl shadow-md transition-colors"
-            >
-              Log Masuk
-            </button>
-            <button
-              type="button"
-              onclick="closeLoginModal()"
-              class="w-full py-2 text-sm font-medium text-slate-500 hover:text-slate-800 transition-colors"
-            >
-              Batal
-            </button>
-          </form>
-        </div>
-      </div>
-
-      <!-- ========================================== -->
-      <!-- VIEW 4: PANEL PENTADBIR (ADMIN)            -->
-      <!-- ========================================== -->
-      <section id="adminView" class="hidden block">
-        <header
-          class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 bg-white p-6 rounded-2xl shadow-sm border border-surau-cream-dark will-fade animate-fade-in-down"
-        >
-          <div class="flex items-center gap-4">
-            <img
-              src="https://i.postimg.cc/xj7Tg7Wv/file-00000000341472068053d1849794a56f.png"
-              alt="Logo"
-              class="w-12 h-12 object-contain"
-              onerror="this.style.display = 'none'"
-            />
-            <div>
-              <h1 class="text-2xl font-bold text-slate-800">Panel Pentadbir</h1>
-              <p class="text-slate-500 text-sm">Pengurusan Data Ahli Kariah</p>
+            <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
+                <table class="w-full text-left">
+                    <thead class="bg-slate-50 border-b">
+                        <tr>
+                            <th class="p-4">Nama</th>
+                            <th class="p-4">Status</th>
+                            <th class="p-4 text-right">Tindakan</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminTableBody"></tbody>
+                </table>
             </div>
-          </div>
-          <div class="flex gap-2 w-full sm:w-auto">
-            <button
-              onclick="exportToCSV()"
-              class="flex-1 sm:flex-none justify-center bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition-colors flex items-center gap-2"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                />
-              </svg>
-              Eksport
-            </button>
-            <button
-              onclick="logoutAdmin()"
-              class="flex-1 sm:flex-none justify-center bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition-colors flex items-center gap-2"
-            >
-              Log Keluar
-            </button>
-          </div>
-        </header>
-
-        <!-- Dashboard Stats -->
-        <div
-          id="adminDashboard"
-          class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 will-fade animate-fade-in-up"
-          style="animation-delay: 0.1s"
-        >
-          <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
-            <p class="text-sm font-medium text-slate-500 mb-1">Jumlah Ahli</p>
-            <p id="statTotal" class="text-3xl font-bold text-slate-800">0</p>
-          </div>
-          <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
-            <p class="text-sm font-medium text-slate-500 mb-1">Menunggu Pengesahan</p>
-            <p id="statPending" class="text-3xl font-bold text-amber-600">0</p>
-          </div>
-          <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
-            <p class="text-sm font-medium text-slate-500 mb-1">Ahli Baharu (Bulan Ini)</p>
-            <p id="statNewThisMonth" class="text-3xl font-bold text-surau-emerald">0</p>
-          </div>
-          <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
-            <p class="text-sm font-medium text-slate-500 mb-1">Status Perkahwinan</p>
-            <div id="statMarital" class="text-xs font-medium text-slate-600 space-y-1 mt-2">
-              <!-- Data diisi oleh JS -->
-            </div>
-          </div>
-        </div>
-
-        <div class="will-fade animate-fade-in-up" style="animation-delay: 0.2s">
-          <div
-            class="bg-white p-4 rounded-t-xl border border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4"
-          >
-            <div class="relative w-full sm:w-96">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="h-5 w-5 absolute left-3 top-2.5 text-slate-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-              </svg>
-              <input
-                type="text"
-                id="searchInput"
-                placeholder="Cari nama, MyKad, atau telefon..."
-                class="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg outline-none text-sm focus:border-surau-emerald focus:ring-1 focus:ring-surau-emerald"
-              />
-            </div>
-            <div class="text-sm text-slate-500 font-medium whitespace-nowrap">
-              Jumlah Rekod:
-              <span
-                id="totalRecords"
-                class="text-slate-800 font-bold bg-slate-100 px-2 py-1 rounded-md"
-                >0</span
-              >
-            </div>
-          </div>
-
-          <div
-            class="bg-white border-x border-b border-slate-200 rounded-b-xl overflow-hidden shadow-sm"
-          >
-            <div class="overflow-x-auto table-scroll">
-              <table class="w-full text-left border-collapse whitespace-nowrap">
-                <thead>
-                  <tr
-                    class="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 font-semibold tracking-wider"
-                  >
-                    <th class="p-4">Tarikh Mohon</th>
-                    <th class="p-4">Nama Penuh</th>
-                    <th class="p-4">No. MyKad</th>
-                    <th class="p-4">Status</th>
-                    <th class="p-4 text-right">Tindakan</th>
-                  </tr>
-                </thead>
-                <tbody id="dataTableBody" class="text-sm divide-y divide-slate-100"></tbody>
-              </table>
-            </div>
-            <div id="emptyState" class="hidden text-center py-16 text-slate-500 font-medium">
-              Tiada rekod data ditemui.
-            </div>
-          </div>
-        </div>
-      </section>
+        </section>
     </main>
 
-    <footer id="mainFooter" class="block py-6 text-center text-xs text-slate-400 mt-auto w-full">
-      &copy; 2026 Surau Darul Iman.
-      <button
-        onclick="openLoginModal()"
-        class="hover:text-surau-emerald ml-1 underline decoration-dotted underline-offset-2 transition-colors"
-      >
-        Log Masuk Pentadbir
-      </button>
+    <footer class="py-8 text-center text-slate-400 text-sm">
+        &copy; 2026 Surau Darul Iman | <button onclick="showLogin()" class="underline">Admin</button>
     </footer>
 
-    <!-- Toast Component -->
-    <div
-      id="toast"
-      class="fixed top-4 right-4 max-w-sm bg-white shadow-xl rounded-xl p-4 flex items-start gap-3 toast-hidden z-50 border-l-4 border-surau-emerald"
-    >
-      <div>
-        <h4 id="toastTitle" class="text-slate-900 font-bold text-sm">Status Sistem</h4>
-        <p id="toastMessage" class="text-slate-600 text-sm mt-0.5 leading-tight">
-          Mesej dipaparkan di sini.
-        </p>
-      </div>
+    <!-- MODAL LOGIN -->
+    <div id="loginModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center p-4">
+        <div class="bg-white p-6 rounded-2xl w-full max-w-sm">
+            <h3 class="text-lg font-bold mb-4 text-center">Akses Pentadbir</h3>
+            <input type="password" id="adminPass" class="w-full p-3 border rounded-lg mb-4 text-center" placeholder="Kata Laluan">
+            <button onclick="login()" id="btnLogin" class="w-full bg-surau-emerald text-white py-3 rounded-lg font-bold">Masuk</button>
+            <button onclick="hideLogin()" class="w-full mt-2 text-slate-400 text-sm">Batal</button>
+        </div>
     </div>
 
-    <!-- LOGIK JAVASCRIPT (SFA - Niskala Pawaka) -->
+    <!-- TOAST -->
+    <div id="toast" class="fixed top-4 right-4 bg-white border-l-4 border-surau-emerald shadow-lg p-4 rounded toast-hidden transition-all duration-300">
+        <p id="toastMsg" class="font-bold text-sm"></p>
+    </div>
+
     <script>
-      // --- 1. STATE & KONFIGURASI ---
-      // ⬇️ TAMPAL URL /exec GAS anda di sini selepas deploy backend.
-      const API_URL = "https://script.google.com/macros/s/AKfycbyILzMWybu_OEA6RZXqulxugTL8kGOz80zcYJXRMgmrO5uXmoZTGVKXyVNY7cEH0WHgJA/exec";
+        // GANTIKAN URL INI DENGAN URL /exec ANDA
+        const API_URL = "https://script.google.com/macros/s/AKfycbx_TAMPAL_URL_ANDA_DI_SINI/exec";
+        
+        let adminToken = sessionStorage.getItem('token');
 
-      const addressFields = ["alamat1", "alamat2", "alamat3", "poskod", "bandar", "negeri"];
-      let kariahData = []; // cache pentadbir (dimuat dari pelayan selepas login)
-      let editingId = null;
-      let editReturnView = "public";
-      let targetEditIdPublic = null;
-      let editMykadPublic = null; // MyKad ahli yang telah disahkan (untuk edit sendiri)
-      let adminToken = sessionStorage.getItem("kariah_token") || null;
-
-      // --- API HELPER (text/plain elak CORS preflight GAS) ---
-      async function api(action, payload = {}) {
-        const res = await fetch(API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({ action, ...payload }),
-        });
-        const data = await res.json();
-        if (data.error) {
-          if (data.code === 401) forceLogout();
-          throw new Error(
-            data.error === "AUTH" ? "Sesi tamat. Sila log masuk semula." : data.error,
-          );
+        // Utils
+        function showToast(msg, color = 'border-surau-emerald') {
+            const t = document.getElementById('toast');
+            t.className = `fixed top-4 right-4 bg-white border-l-4 ${color} shadow-lg p-4 rounded toast-visible transition-all duration-300`;
+            document.getElementById('toastMsg').innerText = msg;
+            setTimeout(() => t.classList.replace('toast-visible', 'toast-hidden'), 3000);
         }
-        return data;
-      }
-      function setBusy(btn, on, busyHTML) {
-        if (!btn) return;
-        if (on) {
-          btn.dataset._html = btn.innerHTML;
-          btn.disabled = true;
-          if (busyHTML) btn.innerHTML = busyHTML;
-        } else {
-          btn.disabled = false;
-          if (btn.dataset._html) {
-            btn.innerHTML = btn.dataset._html;
-            delete btn.dataset._html;
-          }
-        }
-      }
 
-      // --- 2. UTILITI UI MASTER ---
-      function toggleUI(id, show, displayType = "block") {
-        const el = document.getElementById(id);
-        if (!el) return;
-        if (show) {
-          el.classList.remove("hidden");
-          el.classList.add(displayType);
-        } else {
-          el.classList.remove(displayType);
-          el.classList.add("hidden");
-        }
-      }
-
-      function showToast(title, message, type = "success") {
-        const toast = document.getElementById("toast");
-        document.getElementById("toastTitle").textContent = title;
-        document.getElementById("toastMessage").textContent = message;
-        toast.className = `fixed top-4 right-4 max-w-sm bg-white shadow-xl rounded-xl p-4 flex items-start gap-3 z-50 border-l-4 ${type === "error" ? "border-red-500" : type === "info" ? "border-surau-gold" : "border-surau-emerald"} toast-visible`;
-        setTimeout(() => toast.classList.replace("toast-visible", "toast-hidden"), 4000);
-      }
-
-      function switchPublicTab(tab) {
-        if (editingId) return; // Tab dikunci sewaktu mod edit aktif
-        const bDaftar = document.getElementById("btnTabDaftar");
-        const bStatus = document.getElementById("btnTabStatus");
-
-        if (tab === "daftar") {
-          toggleUI("kariahForm", true, "block");
-          toggleUI("statusView", false, "block");
-          bDaftar.className =
-            "px-6 py-2 rounded-full bg-surau-emerald text-white text-sm font-bold shadow-sm transition-all focus:outline-none";
-          bStatus.className =
-            "px-6 py-2 rounded-full bg-white border border-surau-cream-dark text-slate-600 hover:bg-slate-50 text-sm font-medium transition-all focus:outline-none";
-        } else {
-          toggleUI("kariahForm", false, "block");
-          toggleUI("statusView", true, "block");
-          bStatus.className =
-            "px-6 py-2 rounded-full bg-surau-emerald text-white text-sm font-bold shadow-sm transition-all focus:outline-none";
-          bDaftar.className =
-            "px-6 py-2 rounded-full bg-white border border-surau-cream-dark text-slate-600 hover:bg-slate-50 text-sm font-medium transition-all focus:outline-none";
-
-          document.getElementById("statusResult").classList.add("hidden");
-          document.getElementById("semakMykad").value = "";
-          setTimeout(() => document.getElementById("semakMykad").focus(), 100);
-        }
-      }
-
-      // --- 3. AUTOMASI BORANG & EDIT REHYDRATION ---
-      function promptPublicEdit(id) {
-        targetEditIdPublic = id;
-        toggleUI("authEditModal", true, "flex");
-        document.getElementById("authFullMykad").value = "";
-        setTimeout(() => document.getElementById("authFullMykad").focus(), 100);
-      }
-
-      function closeAuthEditModal() {
-        toggleUI("authEditModal", false, "flex");
-        targetEditIdPublic = null;
-      }
-
-      // Teras Keselamatan Pengesahan Ahli — disahkan di pelayan
-      document.getElementById("authEditForm").addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const btn = e.submitter;
-        const inputRaw = document.getElementById("authFullMykad").value.replace(/\D/g, "");
-        setBusy(btn, true, "Menyemak...");
-        try {
-          const { record } = await api("getOwnRecord", { id: targetEditIdPublic, mykad: inputRaw });
-          editMykadPublic = inputRaw;
-          toggleUI("authEditModal", false, "flex");
-          targetEditIdPublic = null;
-          openEditForm(record, "public");
-          showToast("Akses Dibenarkan", "Sila kemas kini maklumat anda di bawah.", "success");
-        } catch (err) {
-          showToast(
-            "Pengesahan Gagal",
-            err.message || "No. MyKad tidak padan dengan sistem.",
-            "error",
-          );
-        } finally {
-          setBusy(btn, false);
-        }
-      });
-
-      // Mekanisme Buka Borang Mod Edit (terima ID admin ATAU objek rekod ahli)
-      function openEditForm(ref, sourceView) {
-        const record = typeof ref === "string" ? kariahData.find((i) => i.id === ref) : ref;
-        if (!record) return;
-
-        editingId = record.id;
-        editReturnView = sourceView;
-
-        toggleUI("adminView", false, "block");
-        toggleUI("publicView", true, "block");
-        toggleUI("statusView", false, "block");
-        toggleUI("kariahForm", true, "block");
-        toggleUI("publicTabs", false, "flex");
-        toggleUI("btnCancelEdit", true, "flex");
-
-        document.getElementById("mainTitle").textContent = "Kemas Kini Maklumat";
-        document.getElementById("mainSubtitle").textContent =
-          "Sila pastikan data terkini adalah tepat.";
-        document.getElementById("btnSubmitForm").innerHTML =
-          `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg> Simpan Perubahan`;
-
-        const form = document.getElementById("kariahForm");
-        Object.keys(record).forEach((key) => {
-          if (form.elements[key] && form.elements[key].type !== "checkbox") {
-            form.elements[key].value = record[key];
-          }
-        });
-
-        const isSameAddress = addressFields.every(
-          (f) => record[`kp_${f}`] === record[`semasa_${f}`],
-        );
-        document.getElementById("salinAlamat").checked = isSameAddress;
-        syncAddresses();
-
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      }
-
-      // Batal Mod Edit & Kembali
-      function cancelEdit() {
-        editingId = null;
-        editMykadPublic = null;
-        document.getElementById("kariahForm").reset();
-        document.getElementById("salinAlamat").checked = false;
-        syncAddresses();
-
-        document.getElementById("mainTitle").textContent = "Sistem Kariah";
-        document.getElementById("mainSubtitle").textContent = "Surau Darul Iman, Kanchong Darat";
-        document.getElementById("btnSubmitForm").innerHTML =
-          `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg> Hantar Permohonan`;
-
-        toggleUI("btnCancelEdit", false, "flex");
-        toggleUI("publicTabs", true, "flex");
-
-        if (editReturnView === "admin") {
-          toggleUI("publicView", false, "block");
-          toggleUI("adminView", true, "block");
-          renderAdminTable(document.getElementById("searchInput").value);
-        } else {
-          switchPublicTab("status");
-          const mykadInput = document.getElementById("semakMykad").value;
-          if (mykadInput)
-            document.getElementById("semakStatusForm").dispatchEvent(new Event("submit"));
-        }
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      }
-
-      // Regex Pemformatan
-      document.getElementById("noMykad").addEventListener("input", (e) => {
-        let v = e.target.value.replace(/\D/g, "");
-        e.target.value =
-          v.length > 8
-            ? `${v.slice(0, 6)}-${v.slice(6, 8)}-${v.slice(8, 12)}`
-            : v.length > 6
-              ? `${v.slice(0, 6)}-${v.slice(6, 8)}`
-              : v;
-      });
-      document.getElementById("noTelBimbit").addEventListener("input", (e) => {
-        let v = e.target.value.replace(/\D/g, "").slice(0, 11);
-        e.target.value =
-          v.length > 10
-            ? `${v.slice(0, 3)} ${v.slice(3, 7)} ${v.slice(7)}`
-            : v.length > 6
-              ? `${v.slice(0, 3)} ${v.slice(3, 6)} ${v.slice(6)}`
-              : v;
-      });
-      document.getElementById("authFullMykad").addEventListener("input", (e) => {
-        let v = e.target.value.replace(/\D/g, "");
-        e.target.value =
-          v.length > 8
-            ? `${v.slice(0, 6)}-${v.slice(6, 8)}-${v.slice(8, 12)}`
-            : v.length > 6
-              ? `${v.slice(0, 6)}-${v.slice(6, 8)}`
-              : v;
-      });
-
-      const syncAddresses = () => {
-        const isChecked = document.getElementById("salinAlamat").checked;
-        addressFields.forEach((f) => {
-          const s = document.getElementById(`kp_${f}`),
-            t = document.getElementById(`semasa_${f}`);
-          if (isChecked) {
-            t.value = s.value;
-            t.readOnly = true;
-            if (t.tagName === "SELECT") t.style.pointerEvents = "none";
-            t.classList.add("bg-slate-100", "text-slate-500");
-          } else {
-            t.readOnly = false;
-            if (t.tagName === "SELECT") t.style.pointerEvents = "auto";
-            t.classList.remove("bg-slate-100", "text-slate-500");
-          }
-        });
-      };
-
-      document.getElementById("salinAlamat").addEventListener("change", syncAddresses);
-      addressFields.forEach((f) =>
-        document.getElementById(`kp_${f}`).addEventListener("input", () => {
-          if (document.getElementById("salinAlamat").checked) syncAddresses();
-        }),
-      );
-
-      // Hantar Permohonan / Simpan Edit (ke pelayan)
-      document.getElementById("kariahForm").addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const btn = document.getElementById("btnSubmitForm");
-        const dataObj = Object.fromEntries(new FormData(e.target).entries());
-
-        setBusy(btn, true, "Memproses...");
-        try {
-          if (editingId) {
-            if (editReturnView === "admin") {
-              await api("adminUpdate", { token: adminToken, id: editingId, record: dataObj });
-            } else {
-              await api("updateOwn", { id: editingId, mykad: editMykadPublic, record: dataObj });
-            }
-            showToast("Data Dikemas Kini", "Maklumat kariah telah berjaya disimpan.", "success");
-            if (editReturnView === "admin") await loadAdminData();
-            cancelEdit();
-          } else {
-            await api("register", { record: dataObj });
-            showToast("Permohonan Diterima", "Maklumat direkod dan menunggu pengesahan.", "info");
-            e.target.reset();
-            document.getElementById("salinAlamat").checked = false;
-            syncAddresses();
-            window.scrollTo({ top: 0, behavior: "smooth" });
-          }
-        } catch (err) {
-          showToast("Ralat", err.message, "error");
-        } finally {
-          setBusy(btn, false);
-        }
-      });
-
-      // --- 4. LOGIK SEMAKAN STATUS ---
-      function maskName(name) {
-        return String(name || "")
-          .split(" ")
-          .map((word) => {
-            if (word.length <= 2) return word;
-            return word[0] + "*".repeat(word.length - 2) + word[word.length - 1];
-          })
-          .join(" ");
-      }
-
-      document.getElementById("semakStatusForm").addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const btn = e.submitter;
-        const input = document.getElementById("semakMykad").value.replace(/\D/g, "");
-        const resultContainer = document.getElementById("statusResult");
-        setBusy(btn, true, "Menyemak...");
-        try {
-          const { results } = await api("checkStatus", { digits: input });
-          resultContainer.classList.remove("hidden");
-          resultContainer.innerHTML = "";
-
-          if (!results.length) {
-            resultContainer.innerHTML = `<div class="p-4 bg-red-50 border border-red-100 text-red-700 rounded-xl text-center text-sm font-medium">Tiada rekod permohonan ditemui untuk nombor ini.</div>`;
-          } else {
-            results.forEach((row) => {
-              const isApproved = row.status === "Disahkan";
-              const statusClass = isApproved
-                ? "bg-green-100 text-green-700 border-green-200"
-                : "bg-amber-100 text-amber-700 border-amber-200";
-              const icon = isApproved
-                ? `<svg class="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`
-                : `<svg class="w-5 h-5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
-
-              const editBtn = isApproved
-                ? `<button type="button" onclick="promptPublicEdit('${row.id}')" class="mt-3 w-full bg-white border border-surau-emerald text-surau-emerald hover:bg-surau-emerald hover:text-white py-2 rounded-lg text-sm font-bold transition-colors shadow-sm">Kemaskini Data Ahli</button>`
-                : "";
-
-              resultContainer.innerHTML += `
-                        <div class="p-4 border ${isApproved ? "border-green-200 bg-green-50/50" : "border-amber-200 bg-amber-50/50"} rounded-xl transition-all">
-                            <div class="flex justify-between items-center">
-                                <div><p class="text-xs text-slate-400 font-mono mb-0.5">******-${input.slice(-4)}</p><p class="text-sm font-bold text-slate-700 uppercase">${row.nama}</p></div>
-                                <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg border ${statusClass} font-bold text-xs uppercase tracking-wide">${icon} ${row.status}</div>
-                            </div>
-                            ${editBtn}
-                        </div>
-                    `;
+        async function api(action, payload = {}) {
+            const res = await fetch(API_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action, ...payload })
             });
-          }
-        } catch (err) {
-          showToast("Ralat", err.message, "error");
-        } finally {
-          setBusy(btn, false);
+            const data = await res.json();
+            if (data.error) throw new Error(data.error);
+            return data;
         }
-      });
 
-      // --- 5. LOGIK SISTEM PENTADBIR (ADMIN) ---
-      function openLoginModal() {
-        toggleUI("loginModal", true, "flex");
-        setTimeout(() => document.getElementById("adminPassword").focus(), 100);
-      }
-      function closeLoginModal() {
-        toggleUI("loginModal", false, "flex");
-        document.getElementById("loginForm").reset();
-      }
-
-      document.getElementById("loginForm").addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const btn = e.submitter;
-        const pw = document.getElementById("adminPassword").value;
-        setBusy(btn, true, "Menyemak...");
-        try {
-          const { token } = await api("login", { password: pw });
-          adminToken = token;
-          sessionStorage.setItem("kariah_token", token);
-          closeLoginModal();
-          toggleUI("publicView", false, "block");
-          toggleUI("mainFooter", false, "block");
-          toggleUI("adminView", true, "block");
-          await loadAdminData();
-          window.scrollTo(0, 0);
-          showToast("Akses Diberikan", "Selamat kembali, Admin.", "success");
-        } catch (err) {
-          showToast("Akses Ditolak", err.message || "Kata laluan salah.", "error");
-          document.getElementById("adminPassword").value = "";
-        } finally {
-          setBusy(btn, false);
+        // Tabs
+        function switchTab(t) {
+            document.getElementById('viewDaftar').classList.toggle('hidden', t !== 'daftar');
+            document.getElementById('viewStatus').classList.toggle('hidden', t !== 'status');
+            document.getElementById('tabDaftar').className = t === 'daftar' ? 'px-6 py-2 rounded-full bg-surau-emerald text-white font-bold' : 'px-6 py-2 rounded-full bg-white border border-slate-200 text-slate-600';
+            document.getElementById('tabStatus').className = t === 'status' ? 'px-6 py-2 rounded-full bg-surau-emerald text-white font-bold' : 'px-6 py-2 rounded-full bg-white border border-slate-200 text-slate-600';
         }
-      });
 
-      function logoutAdmin() {
-        adminToken = null;
-        sessionStorage.removeItem("kariah_token");
-        toggleUI("adminView", false, "block");
-        toggleUI("publicView", true, "block");
-        toggleUI("mainFooter", true, "block");
-        document.getElementById("searchInput").value = "";
-        showToast("Log Keluar Berjaya", "Sesi pentadbir telah ditamatkan.", "success");
-        window.scrollTo(0, 0);
-      }
+        // Registration
+        document.getElementById('kariahForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btnSubmit');
+            btn.disabled = true; btn.innerText = "Menghantar...";
+            try {
+                const record = Object.fromEntries(new FormData(e.target));
+                await api('register', { record });
+                showToast("Pendaftaran Berjaya Dihantar!");
+                e.target.reset();
+            } catch (err) { showToast(err.message, 'border-red-500'); }
+            finally { btn.disabled = false; btn.innerText = "Hantar Permohonan"; }
+        };
 
-      function forceLogout() {
-        adminToken = null;
-        sessionStorage.removeItem("kariah_token");
-        toggleUI("adminView", false, "block");
-        toggleUI("publicView", true, "block");
-        toggleUI("mainFooter", true, "block");
-      }
-
-      async function loadAdminData() {
-        const tableBody = document.getElementById("dataTableBody");
-        tableBody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-slate-400 text-sm">Memuatkan data…</td></tr>`;
-        try {
-          const { records } = await api("list", { token: adminToken });
-          kariahData = records || [];
-          renderAdminTable(document.getElementById("searchInput").value || "");
-        } catch (err) {
-          tableBody.innerHTML = "";
-          showToast("Ralat", err.message, "error");
+        // Check Status
+        async function checkStatus() {
+            const digits = document.getElementById('inputStatus').value;
+            const resDiv = document.getElementById('statusResult');
+            try {
+                const { results } = await api('checkStatus', { digits });
+                resDiv.innerHTML = results.map(r => `
+                    <div class="p-4 border rounded-lg bg-slate-50">
+                        <p class="text-xs text-slate-400">NAMA: ${r.nama}</p>
+                        <p class="font-bold">STATUS: ${r.status}</p>
+                    </div>
+                `).join('') || "Tiada rekod.";
+            } catch (err) { showToast(err.message, 'border-red-500'); }
         }
-      }
 
-      function renderDashboard() {
-        const total = kariahData.length;
-        const pending = kariahData.filter((r) => r.status === "Menunggu").length;
+        // Admin Auth
+        function showLogin() { document.getElementById('loginModal').classList.replace('hidden', 'flex'); }
+        function hideLogin() { document.getElementById('loginModal').classList.replace('flex', 'hidden'); }
 
-        const now = new Date();
-        const newThisMonth = kariahData.filter((r) => {
-          const d = new Date(r.tarikhMohon);
-          return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
-        }).length;
+        async function login() {
+            const password = document.getElementById('adminPass').value;
+            try {
+                const { token } = await api('login', { password });
+                adminToken = token;
+                sessionStorage.setItem('token', token);
+                hideLogin();
+                loadAdmin();
+            } catch (err) { showToast(err.message, 'border-red-500'); }
+        }
 
-        const maritalStatus = kariahData.reduce((acc, r) => {
-          const status = r.statusPerkahwinan || "Tidak Dinyatakan";
-          acc[status] = (acc[status] || 0) + 1;
-          return acc;
-        }, {});
-
-        document.getElementById("statTotal").textContent = total;
-        document.getElementById("statPending").textContent = pending;
-        document.getElementById("statNewThisMonth").textContent = newThisMonth;
-
-        const maritalContainer = document.getElementById("statMarital");
-        maritalContainer.innerHTML = Object.entries(maritalStatus)
-          .sort((a, b) => b[1] - a[1]) // Susun dari jumlah tertinggi
-          .map(([status, count]) => `<div>${status}: <span class="font-bold">${count}</span></div>`)
-          .join("");
-      }
-
-      function renderAdminTable(filterText = "") {
-        const tableBody = document.getElementById("dataTableBody");
-        tableBody.innerHTML = "";
-        const filteredData = kariahData.filter((item) =>
-          `${item.namaPenuh} ${item.noMykad} ${item.noTelBimbit}`
-            .toLowerCase()
-            .includes(filterText.toLowerCase()),
-        );
-        document.getElementById("totalRecords").textContent = filteredData.length;
-
-        if (filteredData.length === 0) {
-          toggleUI("emptyState", true, "block");
-        } else {
-          toggleUI("emptyState", false, "block");
-          renderDashboard(); // Panggil fungsi dashboard
-          filteredData
-            .sort((a, b) => new Date(b.tarikhMohon) - new Date(a.tarikhMohon))
-            .forEach((row) => {
-              const tr = document.createElement("tr");
-              tr.className = "hover:bg-slate-50 transition-colors";
-              const dateObj = new Date(row.tarikhMohon);
-              const formattedDate = `${dateObj.getDate().toString().padStart(2, "0")}/${(dateObj.getMonth() + 1).toString().padStart(2, "0")}/${dateObj.getFullYear()}`;
-
-              const btnSahkan =
-                row.status === "Menunggu"
-                  ? `<button onclick="approveRecord('${row.id}')" class="text-surau-emerald hover:text-surau-emerald-dark font-medium mr-4">Sahkan</button>`
-                  : `<span class="text-slate-300 mr-4 font-medium">Selesai</span>`;
-
-              tr.innerHTML = `
-                        <td class="p-4 text-slate-500 font-mono text-xs">${formattedDate}</td>
-                        <td class="p-4 font-bold text-slate-800 uppercase">${row.namaPenuh}</td>
-                        <td class="p-4 text-slate-600 font-mono text-xs">${row.noMykad}</td>
-                        <td class="p-4"><span class="px-3 py-1 rounded-full text-[10px] uppercase font-bold tracking-wider ${row.status === "Disahkan" ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"}">${row.status}</span></td>
-                        <td class="p-4 text-right whitespace-nowrap">
-                            ${btnSahkan}
-                            <button onclick="openEditForm('${row.id}', 'admin')" class="text-blue-600 hover:text-blue-800 font-medium mr-4 transition-colors">Edit</button>
-                            <button onclick="deleteRecord('${row.id}')" class="text-red-500 hover:text-red-700 font-medium transition-colors">Padam</button>
+        async function loadAdmin() {
+            try {
+                const { records } = await api('list', { token: adminToken });
+                document.getElementById('publicHeader').classList.add('hidden');
+                document.getElementById('viewDaftar').classList.add('hidden');
+                document.getElementById('viewStatus').classList.add('hidden');
+                document.getElementById('viewAdmin').classList.remove('hidden');
+                
+                const tbody = document.getElementById('adminTableBody');
+                tbody.innerHTML = records.map(r => `
+                    <tr class="border-b">
+                        <td class="p-4 font-bold uppercase">${r.namaPenuh}</td>
+                        <td class="p-4 text-sm">${r.status}</td>
+                        <td class="p-4 text-right">
+                            <button onclick="updateStatus('${r.id}', 'Disahkan')" class="text-emerald-600 mr-2">Sahkan</button>
+                            <button onclick="deleteRec('${r.id}')" class="text-red-500">Padam</button>
                         </td>
-                    `;
-              tableBody.appendChild(tr);
-            });
+                    </tr>
+                `).join('');
+            } catch (err) { 
+                if(err.message === 'AUTH') logout();
+                showToast(err.message, 'border-red-500'); 
+            }
         }
-      }
 
-      document
-        .getElementById("searchInput")
-        .addEventListener("input", (e) => renderAdminTable(e.target.value));
-
-      window.approveRecord = async (id) => {
-        try {
-          await api("setStatus", { token: adminToken, id, status: "Disahkan" });
-          const r = kariahData.find((x) => x.id === id);
-          if (r) r.status = "Disahkan";
-          renderAdminTable(document.getElementById("searchInput").value);
-          renderDashboard();
-          showToast("Disahkan", "Keahlian diaktifkan.", "success");
-        } catch (err) {
-          showToast("Ralat", err.message, "error");
+        async function updateStatus(id, status) {
+            await api('setStatus', { token: adminToken, id, status });
+            loadAdmin();
         }
-      };
 
-      window.deleteRecord = async (id) => {
-        if (!confirm("Padam rekod ini secara kekal?")) return;
-        try {
-          await api("remove", { token: adminToken, id });
-          kariahData = kariahData.filter((x) => x.id !== id);
-          renderAdminTable(document.getElementById("searchInput").value);
-          renderDashboard();
-          showToast("Dipadam", "Rekod dibuang.", "error");
-        } catch (err) {
-          showToast("Ralat", err.message, "error");
+        async function deleteRec(id) {
+            if(!confirm("Padam rekod?")) return;
+            await api('remove', { token: adminToken, id });
+            loadAdmin();
         }
-      };
 
-      window.exportToCSV = () => {
-        if (!kariahData.length) return showToast("Ralat", "Tiada data untuk dieksport.", "error");
-        const headers = [
-          "ID",
-          "Tarikh",
-          "Status",
-          "Nama",
-          "MyKad",
-          "Kahwin",
-          "Tel Bimbit",
-          "Tel Rumah",
-          "Emel",
-          "Alamat Semasa",
-          "Poskod",
-          "Bandar",
-          "Negeri",
-          "Tempoh (Thn)",
-          "Tempoh (Bln)",
-        ];
-        const rows = [headers.join(",")].concat(
-          kariahData.map((r) => {
-            return [
-              r.id,
-              new Date(r.tarikhMohon).toLocaleDateString("ms-MY"),
-              r.status,
-              `"${r.namaPenuh}"`,
-              `="${r.noMykad}"`,
-              r.statusPerkahwinan,
-              `="${r.noTelBimbit}"`,
-              `="${r.noTelRumah || ""}"`,
-              r.email || "",
-              `"${`${r.semasa_alamat1} ${r.semasa_alamat2} ${r.semasa_alamat3 || ""}`.trim().replace(/"/g, '""')}"`,
-              `="${r.semasa_poskod}"`,
-              r.semasa_bandar,
-              r.semasa_negeri,
-              r.tempohTahun,
-              r.tempohBulan,
-            ].join(",");
-          }),
-        );
-        const blob = new Blob(["\uFEFF" + rows.join("\n")], { type: "text/csv;charset=utf-8;" });
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = `Data_Ahli_Kariah_${new Date().toISOString().slice(0, 10)}.csv`;
-        link.click();
-      };
-
-      // --- 6. INIT: pulihkan sesi admin jika token masih sah ---
-      (async function initAuth() {
-        if (!adminToken) return;
-        try {
-          const { records } = await api("list", { token: adminToken });
-          kariahData = records || [];
-          toggleUI("publicView", false, "block");
-          toggleUI("mainFooter", false, "block");
-          toggleUI("adminView", true, "block");
-          renderAdminTable("");
-        } catch (e) {
-          forceLogout();
+        function logout() {
+            sessionStorage.clear();
+            location.reload();
         }
-      })();
+
+        // MyKad Format
+        document.getElementById('noMykad').oninput = (e) => {
+            let v = e.target.value.replace(/\D/g, '');
+            if (v.length > 6) v = v.slice(0,6) + '-' + v.slice(6);
+            if (v.length > 9) v = v.slice(0,9) + '-' + v.slice(9,13);
+            e.target.value = v;
+        };
+
+        // Auto-load if token exists
+        if(adminToken) loadAdmin();
+
     </script>
-  </body>
+</body>
 </html>
